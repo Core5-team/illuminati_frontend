@@ -3,21 +3,12 @@ pipeline {
     options {
         skipStagesAfterUnstable()
     }
-    environment {
-        FRONTEND_ECR_LINK = "896015496924.dkr.ecr.us-east-1.amazonaws.com/frontend_stage"
-    }
     stages {        
         stage('Build') { 
             steps { 
                 script {
                     app = docker.build("frontend_stage")
                 }
-            }
-        }
-
-        stage('Test') {
-            steps {
-                echo 'Empty'
             }
         }
 
@@ -37,7 +28,6 @@ pipeline {
                 script {
                     docker.withRegistry("https://${FRONTEND_ECR_LINK}") {
                         app.push("${env.BUILD_NUMBER}")
-                        app.push("latest")
                     }
                 }
             }
