@@ -3,29 +3,38 @@ pipeline {
     options {
         skipStagesAfterUnstable()
     }
+    environment {
+        FRONTEND_ECR_LINK = "896015496924.dkr.ecr.us-east-1.amazonaws.com/frontend_stage"
+    }
     stages {        
         stage('Build') { 
             steps { 
-                script{
-                 app = docker.build("frontend_stage")
+                script {
+                    app = docker.build("frontend_stage")
                 }
             }
         }
-        stage('Test'){
+
+        stage('Test') {
             steps {
-                 echo 'Empty'
+                echo 'Empty'
             }
         }
+
         stage('Logging into AWS ECR') {
             steps {
                 script {
-                    sh """aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${FRONTEND_ECR_LINK}"""
+                    sh """
+                        aws ecr get-login-password --region us-east-1 | \
+                        docker login --username AWS --password-stdin ${FRONTEND_ECR_LINK}
+                    """
                 }
             }
         }
+
         stage('Deploy') {
             steps {
-                script{
+                script {
                     docker.withRegistry("https://${FRONTEND_ECR_LINK}") {
                         app.push("${env.BUILD_NUMBER}")
                         app.push("latest")
@@ -34,29 +43,30 @@ pipeline {
             }
         }
 
-
         stage('Update ArgoCD values') {
-            environment {
-                GGIT_REPO = "git@github.com:Core5-team/illuminati_gitops.git"
-                FILE_PATH = "apps/prod/frontend.yaml"
-            }
             steps {
                 sshagent(['github_ssh_key']) {
-                    sh """
-                        rm -rf gitops-repo
-                        git clone ${GIT_REPO} gitops-repo
-                        cd gitops-repo
-                        git checkout CORE5-15-Install-and-Configure-ArgoCD-in-Existing-EKS-Cluster
+                    script {
+                        def GIT_REPO = "git@github.com:Core5-team/illuminati_gitops.git"
+                        def FILE_PATH = "apps/prod/frontend.yaml"
+                        def BRANCH = "CORE5-15-Install-and-Configure-ArgoCD-in-Existing-EKS-Cluster"
 
-                        sed -i 's/^buildVersion:.*/buildVersion: "${env.BUILD_NUMBER}"/' ${FILE_PATH}
+                        sh """
+                            rm -rf gitops-repo
+                            git clone ${GIT_REPO} gitops-repo
+                            cd gitops-repo
+                            git checkout ${BRANCH}
 
-                        git config user.email "jenkins@ci"
-                        git config user.name "Jenkins Bot"
+                            sed -i 's/^buildVersion:.*/buildVersion: "${env.BUILD_NUMBER}"/' ${FILE_PATH}
 
-                        git add ${FILE_PATH}
-                        git commit -m "Update buildVersion to ${env.BUILD_NUMBER}"
-                        git push origin main
-                    """
+                            git config user.email "jenkins@ci"
+                            git config user.name "Jenkins Bot"
+
+                            git add ${FILE_PATH}
+                            git commit -m "Update buildVersion to ${env.BUILD_NUMBER}"
+                            git push origin ${BRANCH}
+                        """
+                    }
                 }
             }
         }
