@@ -7,7 +7,7 @@ pipeline {
         stage('Build') { 
             steps { 
                 script {
-                    app = docker.build("frontend_stage")
+                    app = docker.build("frontend")
                 }
             }
         }
@@ -38,7 +38,7 @@ pipeline {
                 sshagent(['github_ssh_key']) {
                     script {
                         def GIT_REPO = "git@github.com:Core5-team/illuminati_gitops.git"
-                        def FILE_PATH = "envs/prod/frontend-values.yaml"
+                        def FILE_PATH = "envs/dev/frontend-values.yaml"
                         def BRANCH = "CORE5-15-Install-and-Configure-ArgoCD-in-Existing-EKS-Cluster"
 
                         sh """
