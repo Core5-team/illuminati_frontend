@@ -57,7 +57,8 @@ pipeline {
                             cd gitops-repo
                             git checkout ${BRANCH}
 
-                            sed -i "s/^buildVersion:.*/buildVersion: \"${BUILD_NUMBER}\"/" ${FILE_PATH}
+                            sed -i "s/^buildVersion: \".*\"/buildVersion: \"${BUILD_NUMBER}\"/" ${FILE_PATH}
+
 
                             git config user.email "jenkins@ci"
                             git config user.name "Jenkins Bot"
